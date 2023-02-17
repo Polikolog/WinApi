@@ -27,7 +27,7 @@ BOOL Solution::GetSystemTimeFromFile(FILETIME& fileTime, SYSTEMTIME& sysTime)
 }
 
 
-BOOL Solution::ReadFile(HANDLE64 file, char* buffer, LPOVERLAPPED ovl)
+BOOL Solution::ReadFile(HANDLE file, char* buffer, LPOVERLAPPED ovl)
 {
 	DWORD bufRead;
 
