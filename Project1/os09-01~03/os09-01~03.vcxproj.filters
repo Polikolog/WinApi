@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков\Lab1">
+      <UniqueIdentifier>{e8be2547-9bcb-425b-9085-fc9d771b1cb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Solution">
+      <UniqueIdentifier>{70a69e1d-bad1-44ac-a339-c67722db3ec3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\General">
+      <UniqueIdentifier>{c69ad379-3722-4b1f-93fd-5baf15216106}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Lab1">
+      <UniqueIdentifier>{28a98b12-e1fb-4b61-9d39-ca3d0eeae815}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Solution">
+      <UniqueIdentifier>{917bd77f-7589-49d2-a85f-186a45896cdf}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main01~03.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Lab1.cpp">
+      <Filter>Исходные файлы\Lab1</Filter>
+    </ClCompile>
+    <ClCompile Include="Solution.cpp">
+      <Filter>Исходные файлы\Solution</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="General.h">
+      <Filter>Файлы заголовков\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Lab1.h">
+      <Filter>Файлы заголовков\Lab1</Filter>
+    </ClInclude>
+    <ClInclude Include="Solution.h">
+      <Filter>Файлы заголовков\Solution</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
