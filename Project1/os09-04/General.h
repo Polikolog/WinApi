@@ -16,6 +16,7 @@ struct General
 		std::string nstr{};
 		for (std::string str{}; std::getline(strngs, str);)
 		{
+			std::cout << str << std::endl;
 			strings.push_back(str);
 		}
 		for (int i{}; i < strings.size(); i++)

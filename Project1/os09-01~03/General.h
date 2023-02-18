@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <sstream>
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 1024
 
 struct General
 {
@@ -41,7 +41,7 @@ struct General
 	static std::string merge_strings(std::vector<std::string>& s)
 	{
 		int i{};
-		std::string rstr;
+		std::string rstr{ "" };
 		for (auto str : s)
 		{
 			i++;
@@ -54,29 +54,37 @@ struct General
 
 	static BOOL insertRow(DWORD row, LPWSTR wstr, std::vector<std::string>& s)
 	{
-		std::vector<std::string> ns;
-
+		//std::cout << row;
+		std::vector<std::string> ns(s.size() + 1);
+		
 		std::string str;
 		bool postisr{ false };
 
 		wstring_to_string(wstr, str);
-
-		for (int i{}; i <= s.size(); i++)
+		if (DWORD(-1) != row)
 		{
-			if (i == row - 1)
+			for (int i{}; i <= s.size(); i++)
 			{
-				ns.push_back(str);
-				postisr = true;
-				continue;
+				if (i == row)
+				{
+					ns.push_back(str);
+					postisr = true;
+					continue;
+				}
+				if (postisr)
+				{
+					ns.push_back(s[i - 1]);
+					continue;
+				}
+				ns.push_back(s[i]);
 			}
-			if (postisr)
-			{
-				ns.push_back(s[i - 1]);
-				continue;
-			}
-			ns.push_back(s[i]);
+			s = ns;
 		}
-		s = ns;
+		if(DWORD(-1) == row)
+		{
+			s.push_back(str);
+		}
+
 		return TRUE;
 	}
 

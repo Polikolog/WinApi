@@ -16,6 +16,4 @@ namespace Lab1
 
 	BOOL insRowFileTxt(LPWSTR, LPWSTR, DWORD);
 
-	BOOL printWathRowFileTxt(LPWSTR, DWORD);
-
 };

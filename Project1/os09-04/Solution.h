@@ -16,7 +16,7 @@ public:
 
 	static BOOL GetSystemTimeFromFile(FILETIME&, SYSTEMTIME&);
 
-	static BOOL ReadFile(HANDLE, char*, LPOVERLAPPED = NULL);
+	static BOOL ReadFile(HANDLE, char*,SIZE_T size = NULL, LPOVERLAPPED = NULL);
 
 	static BOOL GetFileSize(HANDLE, LARGE_INTEGER&);
 

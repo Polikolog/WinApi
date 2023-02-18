@@ -31,7 +31,7 @@ BOOL Solution::ReadFile(HANDLE file, char* buffer, LPOVERLAPPED ovl)
 {
 	DWORD bufRead;
 
-	if (!::ReadFile(file, buffer, BUFFER_SIZE, &bufRead, ovl))
+	if (!::ReadFile(file, buffer, size, &bufRead, ovl))
 	{
 		std::cout << "File error(read): " << GetLastError() << std::endl;
 		return FALSE;

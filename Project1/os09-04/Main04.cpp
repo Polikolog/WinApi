@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 {
 	wchar_t fileName[] = L"T:\\C3S2\\OS\\Project1\\Ex1.txt";
 
-	if (!Lab1::printWathRowFileTxt(fileName, 20000))
+	if (!Lab1::printWathRowFileTxt(fileName, 200000))
 		return -1;
 
 	system("pause");

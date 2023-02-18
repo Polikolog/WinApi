@@ -31,7 +31,7 @@ BOOL Solution::ReadFile(HANDLE file, char* buffer, LPOVERLAPPED ovl)
 {
 	DWORD bufRead;
 
-	if (!::ReadFile(file, buffer, BUFFER_SIZE, &bufRead, ovl))
+	if (!::ReadFile(file, buffer, size, &bufRead, ovl))
 	{
 		std::cout << "File error(read): " << GetLastError() << std::endl;
 		return FALSE;
@@ -48,7 +48,7 @@ BOOL Solution::GetFileSize(HANDLE file, LARGE_INTEGER& fileSize)
 		std::cout << "File error(size): " << GetLastError() << std::endl;
 		return FALSE;
 	}
-	std::cout << "File size: " << fileSize.QuadPart << "kb" << std::endl;
+	std::cout << "File size: " << fileSize.QuadPart << std::endl;
 	return TRUE;
 }
 
@@ -72,10 +72,11 @@ BOOL Solution::CloseHandle(HANDLE file)
 	return TRUE;
 }
 
-BOOL Solution::WriteFile(HANDLE file, char* buffer, LPOVERLAPPED ovl)
+BOOL Solution::WriteFile(HANDLE file, char* buffer,SIZE_T bufsize, LPOVERLAPPED ovl)
 {
 	DWORD bufRead;
-	if (!::WriteFile(file, buffer, BUFFER_SIZE, &bufRead, NULL))
+	
+	if (!::WriteFile(file, buffer, bufsize, &bufRead, NULL))
 	{
 		std::cout << "File error(write): " << GetLastError() << std::endl;
 		return FALSE;

@@ -25,7 +25,7 @@ int main()
 
 	system("pause");
 
-	if (!Lab1::insRowFileTxt(fileName, str, 1))
+	if (!Lab1::insRowFileTxt(fileName, str, -1))
 		return -1;
 
 	if (!Lab1::printFileTxt(fileName))
