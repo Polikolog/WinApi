@@ -1,1 +1,0 @@
-Delete element	Key: 6	Payload: 2

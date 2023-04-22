@@ -25,15 +25,15 @@ int main(int argc, char* argv[])
 			throw "Error get proc address for func GETLASTERRORPROG";
 
 		wchar_t* fileName{nullptr};
-		const std::wstring directoryPath = L"..\\..\\HT\\";
+		const std::wstring directoryPath = L"..\\..\\HT";
 		std::wstring filePath(L"..\\..\\HT\\test.ht");
 
 		try {
 			if (argv[1]) {
-				/*fileName = GetWC(argv[1]);
+				fileName = GetWC(argv[1]);
 				std::wstring s(directoryPath);
-				s += std::wstring(fileName);
-				filePath = s;*/filePath = GetWC(argv[1]);
+				s += L"\\" + std::wstring(fileName);
+				filePath = s;
 			}
 			else
 				std::cout << "Using default file path" << std::endl;

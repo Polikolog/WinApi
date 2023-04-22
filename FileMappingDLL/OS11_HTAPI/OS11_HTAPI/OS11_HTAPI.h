@@ -8,8 +8,8 @@
 #endif
 
 #include <Windows.h>
-#include<iomanip>
-#include<iostream>
+#include <iomanip>
+#include <iostream>
 
 
 #define CREATE_HTFILE_ERROR "Create HTFile error";
@@ -30,7 +30,6 @@ namespace HT{
 	//          Snap   - выпонить snapshot
 	//          Close  - выполнить Snap и закрыть HT-хранилище для использования
 	//          GetLastError - получить сообщение о последней ошибке
-
 
 extern "C" OS11_HTAPI_API struct HTHANDLE    // блок управления HT
 	{

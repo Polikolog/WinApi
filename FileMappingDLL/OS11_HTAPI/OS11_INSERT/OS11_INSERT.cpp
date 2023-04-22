@@ -8,13 +8,17 @@
 #include <ctime>
 #include <chrono>
 
+wchar_t* GetWC(const char* c);
+
 HANDLE mutexName;
 
 DWORD WINAPI RecordingWork(LPVOID point)
 {
 	try {
-		HT::Element* el = reinterpret_cast<std::pair<HT::Element*, bool>*>(point)->first;
-		bool suc = reinterpret_cast<std::pair<HT::Element*, bool>*>(point)->second;
+		auto tp = reinterpret_cast<std::tuple<HT::Element*, bool, std::wstring>*>(point);
+		HT::Element* el = std::get<0>(*tp);
+		bool suc = std::get<1>(*tp);
+		std::wstring fileName = std::get<2>(*tp);
 
 		std::cout << "Recording...." << std::endl;
 
@@ -25,9 +29,9 @@ DWORD WINAPI RecordingWork(LPVOID point)
 		std::wstringstream ss;
 		ss << std::put_time(now_tm, L"%Y-%m-%d_%H-%M-%S") << L".txt";
 		std::wstring date = ss.str();
-		std::wstring fileName(L"..\\..\\Records\\Insert\\" + date);
+		std::wstring filePath(L"..\\..\\Records\\Insert\\" + date);
 
-		auto file = CreateFile(fileName.c_str(), GENERIC_READ | GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		auto file = CreateFile(filePath.c_str(), GENERIC_READ | GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (file == INVALID_HANDLE_VALUE)
 			throw "Error create file record\t" + GetLastError();
 
@@ -44,15 +48,19 @@ DWORD WINAPI RecordingWork(LPVOID point)
 		}
 		for (int i{}; i < el->payloadlength; i++)
 		{
-			if(payload_str[i] != '\n')
-			payload.push_back(payload_str[i]);
+			if (payload_str[i] != '\n')
+			{
+				if (payload_str[i] == '0')
+					payload.push_back('0');
+				else
+					payload.push_back(payload_str[i]);
+			}
 		}
 
-		std::string string_suc = std::string(suc ? "true" : "false");
-		std::string str("Insert element\tKey: ");
-		str += key + "\t" + "Payload: " + payload + "\tSuccess: " + string_suc;
+		std::string string_suc = (suc ? "true" : "false");
+		std::string str = "Insert element:\tKey: " + key + "\tPayload: " + payload + "\tSuccess: " + string_suc + "\tOn file: " + std::string(fileName.begin(), fileName.end());
 
-		if (!WriteFile(file, str.c_str(), str.size(), NULL, NULL))
+		if (!WriteFile(file, str.c_str(), static_cast<DWORD>(str.size() + 1), NULL, NULL))
 			throw "Error write file record";
 
 		if(!CloseHandle(file))
@@ -121,21 +129,20 @@ int main(int argc, char* argv[])
 		srand(time(0));
 
 		wchar_t* fileName;
-		const wchar_t* directoryPath = L"..\\HT\\";
+		const wchar_t* directoryPath = L"..\\..\\HT";
 		std::wstring filePath(L"..\\HT\\test.ht");
 
 		try {
 			if (argv[1]) {
 				fileName = GetWC(argv[1]);
 				std::wstring s(directoryPath);
-				s += std::wstring(fileName);
+				s += L"\\" + std::wstring(fileName);
 				filePath = s;
 			}
 			std::wcout << "filename: " << filePath << std::endl;
 
 			HT::HTHANDLE* HT;
 			HT = openExist(filePath.c_str());
-			std::cout << HT;
 			if (HT == NULL)
 				throw "Invalid handle";
 
@@ -159,7 +166,7 @@ int main(int argc, char* argv[])
 				else
 					print(el);
 
-				std::pair<HT::Element*, bool> pr{ el,success };
+				std::tuple<HT::Element*, bool, std::wstring> pr{ el,success, fileName };
 				HANDLE hThread = CreateThread(NULL, 0, RecordingWork, &pr, 0, NULL);
 
 				WaitForSingleObject(hThread, INFINITE);

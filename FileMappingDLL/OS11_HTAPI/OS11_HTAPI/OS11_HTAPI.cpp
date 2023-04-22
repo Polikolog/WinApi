@@ -138,7 +138,7 @@ namespace HT {
 			return NULL;
 		}
 
-		HANDLE hm = CreateFileMapping(hf,NULL,PAGE_READWRITE,0, 0, L"name");
+		HANDLE hm = CreateFileMapping(hf,NULL,PAGE_READWRITE,0, 0, GenerateViewName(FileName));
 		if (!hm)
 			return NULL;
 
@@ -170,19 +170,28 @@ namespace HT {
 	{
 		HANDLE hm;
 		HANDLE mutex = CreateMutex(NULL,FALSE, L"mutex");
-		WaitForSingleObject(mutex, INFINITE);
-		std::cout << _Post_equals_last_error_::GetLastError();
-
-		hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, L"name");
-		std::cout << _Post_equals_last_error_::GetLastError();
-		if (!hm)
+		if (mutex == INVALID_HANDLE_VALUE)
+		{
+			std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
 			return NULL;
+		}
+
+		WaitForSingleObject(mutex, INFINITE);
+
+		hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, GenerateViewName(FileName));
+		if (!hm)
+		{
+			std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
+			return NULL;
+		}
 
 		LPVOID lp = MapViewOfFile(hm, FILE_MAP_ALL_ACCESS | FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
 		Addr = lp;
-		std::cout << _Post_equals_last_error_::GetLastError();
 		if (!lp)
+		{
+			std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
 			return NULL;
+		}
 
 		ReleaseMutex(mutex);
 		HTHANDLE* ht = (HTHANDLE*)lp;
@@ -352,7 +361,7 @@ namespace HT {
 
 	void print(const Element* element) {
 		char* key = (char*)element->key;
-		std::cout << std::right << std::setfill('=') << std::setw(30) << '|' << std::endl;
+		std::cout << std::endl << std::right << std::setfill('=') << std::setw(30) << '|' << std::endl;
 		std::cout << std::left << std::setfill(' ') << std::setw(10) << "KEY";
 		for (int i = 0; i < element->keylength; i++) {
 			std::cout << key[i];
@@ -464,14 +473,12 @@ namespace HT {
 		std::wstring s(pathToHT);
 		std::wstring mutexName;
 		s.erase(std::remove(s.begin(), s.end(), '\\'), s.end());
-		std::wcout << s;
 		return (wchar_t*)s.c_str();
 	}
 	wchar_t* GenerateViewName(const wchar_t* pathToHT) {
 		std::wstring s(pathToHT);
 		std::wstring mutexName;
 		s.erase(std::remove(s.begin(), s.end(), '\\'), s.end());
-		std::wcout << s;
 		return (wchar_t*)s.c_str();
 	}
 

@@ -3,6 +3,7 @@
 
 class OS12ClassFactory : IClassFactory
 {
+public:
 	OS12ClassFactory();
 	~OS12ClassFactory();
 
@@ -12,4 +13,6 @@ class OS12ClassFactory : IClassFactory
 
 	STDMETHOD(CreateInstance(IUnknown* pUnkOuter, const IID& riid, void** ppvObject));
 	STDMETHOD(LockServer(BOOL fLock));
+private:
+	LONG m_refCount;
 };

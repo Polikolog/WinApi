@@ -1,15 +1,18 @@
 ﻿#include "pch.h"
 #include "OS12.h"
 
+long g_lObjs = 0;
+long g_lLocks = 0;
+
 OS12::OS12()
 	:m_refCount{0}
 {
-	InterlockedIncrement(&m_refCount);
+	InterlockedIncrement(&g_lObjs);
 }
 
 OS12::~OS12()
 {
-	InterlockedDecrement(&m_refCount);
+	InterlockedDecrement(&g_lObjs);
 }
 
 
@@ -30,22 +33,19 @@ STDMETHODIMP_(ULONG) OS12::Release()
 
 STDMETHODIMP OS12::QueryInterface(const IID& riid, void** ppvObject)
 {
-	switch(riid)
-	{
-	case IID_IUnknown:
-	case IID_IAdder:
+	if(riid == IID_IAdder || riid == IID_IUnknown)
 	{
 		*ppvObject = static_cast<IAdder*>(this);
 		AddRef();
 		return S_OK;
 	}
-	case IID_IMultiplier:
+	if(riid == IID_IMultiplier)
 	{
 		*ppvObject = static_cast<IMultiplier*>(this);
 		AddRef();
 		return S_OK;
 	}
-	}
+	
 	*ppvObject = NULL;
 	return E_NOINTERFACE;
 }

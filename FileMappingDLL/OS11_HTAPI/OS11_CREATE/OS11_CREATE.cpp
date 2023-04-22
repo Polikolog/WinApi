@@ -3,12 +3,13 @@
 #include "OS11_HTAPI.h"
 #include <wchar.h>
 #include <conio.h>
+#include <Windows.h>
 #include <string>
 #include <locale>
 #include <codecvt>
 
-typedef HT::HTHANDLE* (*Create)(int, int, int, int, const wchar_t*);
-typedef BOOL(*Close)(HT::HTHANDLE*);
+typedef HT::HTHANDLE* (__stdcall *Create)(int, int, int, int, const wchar_t*);
+typedef BOOL(__stdcall *Close)(HT::HTHANDLE*);
 
 wchar_t* GetWC(const char* c)
 {
@@ -24,7 +25,7 @@ int main(int argc, char* argv[])
 	HINSTANCE hDLL = LoadLibrary(L"..\\x64\\Debug\\OS11_HTAPI.dll");
 	if (hDLL != NULL)
 	{
-		std::cout << "DLL!";
+		std::cout << "DLL!" << std::endl;
 		try {
 
 			int capacity = 2000;
@@ -44,8 +45,9 @@ int main(int argc, char* argv[])
 				std::cout << GetWC(argv[5]) << std::endl;
 				std::cout << argv[5];
 				fileName = GetWC(argv[5]);
-
-				filePath = fileName;
+				std::wstring s(directoryPath);
+				s += L"\\" + std::wstring(fileName);
+				filePath = s;
 			}
 			else {
 				std::cout << "Using default values" << std::endl;
@@ -55,7 +57,7 @@ int main(int argc, char* argv[])
 
 			Create create = (Create)GetProcAddress(hDLL, "Create");
 			if (create != NULL)
-				HT = create(capacity, snapshotIntervalSec, maxKeyLength, maxPayloadLength, fileName);
+				HT = create(capacity, snapshotIntervalSec, maxKeyLength, maxPayloadLength, filePath.c_str());
 
 			if (HT == NULL)
 				throw "Invalid handle";
@@ -72,7 +74,7 @@ int main(int argc, char* argv[])
 		}
 		catch (const char* err)
 		{
-			std::cout << err << std::endl;
+			std::cout << std::endl << err << std::endl;
 			FreeLibrary(hDLL);
 			return 1;
 		}

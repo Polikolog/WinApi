@@ -12,8 +12,11 @@ HANDLE mutex;
 DWORD WINAPI RecordingWork(LPVOID point)
 {
 	try {
-		HT::Element* el = reinterpret_cast<std::pair<HT::Element*, HT::Element*>*>(point)->first;
-		HT::Element* el2 = reinterpret_cast<std::pair<HT::Element*, HT::Element*>*>(point)->second;
+		auto pr1 = reinterpret_cast<std::pair<std::pair<HT::Element, HT::Element>, std::wstring>*>(point);
+		auto *pr2 = &std::get<0>(*pr1);
+		HT::Element* el = &pr2->first;
+		HT::Element* el2 = &pr2->second;
+		std::wstring fileName = pr1->second;
 
 		std::cout << "Recording...." << std::endl;
 
@@ -24,9 +27,9 @@ DWORD WINAPI RecordingWork(LPVOID point)
 		std::wstringstream ss;
 		ss << std::put_time(now_tm, L"%Y-%m-%d_%H-%M-%S") << L".txt";
 		std::wstring date = ss.str();
-		std::wstring fileName(L"..\\..\\Records\\Update\\" + date);
+		std::wstring filePath(L"..\\..\\Records\\Update\\" + date);
 
-		auto file = CreateFile(fileName.c_str(), GENERIC_READ | GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		auto file = CreateFile(filePath.c_str(), GENERIC_READ | GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (file == INVALID_HANDLE_VALUE)
 			throw "Error create file record\t" + GetLastError();
 
@@ -44,11 +47,15 @@ DWORD WINAPI RecordingWork(LPVOID point)
 		for (int i{}; i < el->payloadlength; i++)
 		{
 			if (payload_str[i] != '\n')
-				payload.push_back(payload_str[i]);
+			{
+				if (payload_str[i] == '0')
+					payload.push_back('0');
+				else
+					payload.push_back(payload_str[i]);
+			}
 		}
 		
-		std::string str("Update element\tKey: ");
-		str += key + "\tOLD-Payload: " + payload + "\t";
+		std::string str = "Update element:\tKey: " + key + "\tOLD-Payload: " + payload;
 
 		const char* npayload_str = static_cast<const char*>(el2->payload);
 		std::string npayload;
@@ -58,9 +65,9 @@ DWORD WINAPI RecordingWork(LPVOID point)
 				npayload.push_back(npayload_str[i]);
 		}
 
-		str += "NEW-Payload: " + npayload;
+		str += "\tNEW-Payload: " + npayload + "\tFile name:\t" + std::string(fileName.begin(), fileName.end());
 
-		if (!WriteFile(file, str.c_str(), str.size(), NULL, NULL))
+		if (!WriteFile(file, str.c_str(), static_cast<DWORD>(str.size() + 1), NULL, NULL))
 			throw "Error write file record";
 
 		if (!CloseHandle(file))
@@ -138,7 +145,7 @@ int main(int argc, char* argv[])
 		srand(time(0));
 
 		wchar_t* fileName;
-		const wchar_t* directoryPath = L"..\\..\\HT\\";
+		const wchar_t* directoryPath = L"..\\..\\HT";
 		std::wstring filePath(L"..\\..\\HT\\test.ht");
 
 		try {
@@ -146,7 +153,7 @@ int main(int argc, char* argv[])
 			if (argv[1]) {
 				fileName = GetWC(argv[1]);
 				std::wstring s(directoryPath);
-				s += std::wstring(fileName);
+				s += L"\\" + std::wstring(fileName);
 				filePath = s;
 			}
 
@@ -155,7 +162,7 @@ int main(int argc, char* argv[])
 			if (HT == NULL)
 				throw "Invalid handle";
 
-			while (true)
+			while(true)
 			{
 				int numberKey = rand() % 50 + 1;
 				std::string key;
@@ -163,38 +170,32 @@ int main(int argc, char* argv[])
 
 				convert << numberKey;
 				key = convert.str();
-				std::cout << key << ' ' << key.length() << std::endl;
+				std::cout << std::endl << key << ' ' << key.length() << std::endl;
 
 				HT::Element* el;
 				HT::Element* el1 = createKeyElement(key.c_str(), key.length() + 1);
 				HT::Element* el2;
 
-				std::pair<HT::Element*, HT::Element*> pr;
-
 				if ((el = get(HT, el1)) == NULL)
 					printStr(getLastError(HT));
 				else {
 					print(el);
-					pr.first = el;
-
+					HT::Element oel = *el;
 					std::stringstream ss;
 					int num;
 					ss << *(char*)el->payload;
 					ss >> num;
 					int newNum = num + 1;
 
-					std::cout << "old payload: " << *(char*)el->payload << " " << num << " new value: " << newNum << std::endl;
-
 					std::string payload;
 					std::stringstream payloadConvert;
 					payloadConvert << newNum;
 					payload = payloadConvert.str();
 
-					std::cout << "payload: " << payload << std::endl;
-
 					el2 = createFullElement(key.c_str(), key.length() + 1, payload.c_str(), payload.length() + 1);
 
-					pr.second = el2;
+					std::pair<std::pair<HT::Element, HT::Element>, std::wstring> pr{std::make_pair(oel, *el2), fileName};
+
 					HANDLE hThread{NULL};
 					if (WaitForSingleObject(mutex, INFINITE) == WAIT_OBJECT_0)
 						hThread = CreateThread(NULL, 0, RecordingWork, &pr, 0, NULL);
