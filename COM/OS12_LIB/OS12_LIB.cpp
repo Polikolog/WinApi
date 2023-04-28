@@ -1,9 +1,12 @@
 ﻿#include "pch.h"
 #include "framework.h"
-#include "OS12_LIB.h"
-#include "iostream"
+
+#include <iostream>
 #include <objbase.h>
-#include <OS12.h>
+
+#include "OS12.h"
+#include "OS12_LIB.h"
+
 
 OS12HANDEL OS12_LIB::Init()
 {

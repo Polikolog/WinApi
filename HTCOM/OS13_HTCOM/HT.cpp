@@ -12,14 +12,6 @@ LPCWSTR  FriendlyName = L"HT.COM";
 LPCWSTR  VerIndProg = L"HT";
 LPCWSTR  ProgID = L"HT.1.0";
 
-// {1479DCD4-C2B8-4CB4-B9FD-BC70701AFD38}
-DEFINE_GUID(IID_IHT,
-	0x1479dcd4, 0xc2b8, 0x4cb4, 0xb9, 0xfd, 0xbc, 0x70, 0x70, 0x1a, 0xfd, 0x38);
-
-// {871A3D0A-5F35-4452-BEF3-5BD8C0FBDECB}
-DEFINE_GUID(CLSID_HT,
-	0x871a3d0a, 0x5f35, 0x4452, 0xbe, 0xf3, 0x5b, 0xd8, 0xc0, 0xfb, 0xde, 0xcb);
-
 HANDLE Addr;
 
 DWORD WINAPI SnapShotCycle(HTHANDLE* ht);
@@ -35,7 +27,7 @@ HT::~HT()
 	InterlockedDecrement(&g_lObjs);
 }
 
-HRESULT HT::QueryInterface(const IID& riid, void** ppvObject)
+STDMETHODIMP HT::QueryInterface(const IID& riid, void** ppvObject)
 {
 	if(riid == IID_IUnknown || riid == IID_IHT)
 	{
@@ -48,46 +40,52 @@ HRESULT HT::QueryInterface(const IID& riid, void** ppvObject)
 	return E_NOINTERFACE;
 }
 
-ULONG HT::AddRef()
+STDMETHODIMP_(ULONG) HT::AddRef()
 {
 	return InterlockedIncrement(&m_refCount);
 }
 
-ULONG HT::Release()
+STDMETHODIMP_(ULONG) HT::Release()
 {
 	return InterlockedDecrement(&m_refCount);
 }
 
-HTHANDLE* HT::Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const std::wstring FileName)
+STDMETHODIMP_(HTHANDLE*) HT::Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const std::wstring FileName)
 {
-	HANDLE hf = CreateFile(
-		FileName.c_str(),//path
-		GENERIC_WRITE | GENERIC_READ,
-		NULL,//режим совместного пользования
-		NULL,// атрибуты защиты
-		CREATE_NEW,// создание 
-		FILE_ATTRIBUTE_NORMAL,//атрибуты и флаги
-		NULL//файл атрибутов
-	);
-	if (hf == INVALID_HANDLE_VALUE) return NULL;
+	if (Capacity < 0 || SecSnapshotInterval < 0 || MaxKeyLength < 0 || MaxPayloadLength < 0)
+	{
+		std::cout << "Err param" << std::endl;
+		return NULL;
+	}
+
+	HANDLE hf = CreateFile(FileName.c_str(),GENERIC_WRITE | GENERIC_READ, NULL, NULL,
+		CREATE_NEW, FILE_ATTRIBUTE_NORMAL,NULL);
+	if (hf == INVALID_HANDLE_VALUE)
+	{
+		std::cout << "Err create file" << std::endl;
+		return NULL;
+	}
+
 	DWORD HTsize = sizeof(HTHANDLE) + Capacity * (MaxKeyLength + MaxPayloadLength + 2 * sizeof(int));
 	HANDLE hm = CreateFileMapping(
 		hf,
 		NULL,
 		PAGE_READWRITE,
 		0, HTsize, NULL);
-	if (!hm)return NULL;
+	if (!hm)
+		return NULL;
 	std::cout << "Open FileMapping: " << hm << std::endl;
 
 	LPVOID lp = MapViewOfFile(
 		hm,
 		FILE_MAP_ALL_ACCESS | FILE_MAP_READ | FILE_MAP_WRITE,
 		0, 0, 0);
-	if (!lp)return NULL;
+	if (!lp)
+		return NULL;
 	std::cout << "Open MapViewOfFile: " << lp << std::endl;
 
 	ZeroMemory(lp, HTsize);
-	HTHANDLE* ht = new(lp) HTHANDLE(
+	HTHANDLE *ht = new(lp) HTHANDLE(
 		Capacity,
 		SecSnapshotInterval,
 		MaxKeyLength,
@@ -98,37 +96,33 @@ HTHANDLE* HT::Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, in
 	ht->FileMapping = hm;
 	ht->Addr = lp;
 	ht->lastsnaptime = time(NULL);
-	ht->Mutex = CreateMutex(
-		NULL,
-		FALSE,
-		GenerateMutexName(FileName.c_str()));//MAX_PATH LIMIT
 
-	DWORD SnapShotThread = NULL;
-	if (!(ht->SnapshotThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SnapShotCycle, ht, 0, &SnapShotThread))) return NULL;
 	return ht;
+
 }
 
-HTHANDLE* HT::Open(const std::wstring FileName)
+STDMETHODIMP HT::Open(const std::wstring FileName)
 {
 	HANDLE hf = CreateFile(FileName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hf == INVALID_HANDLE_VALUE)
 	{
 		std::cout << _Post_equals_last_error_::GetLastError();
-		return NULL;
+		return E_FAIL;
 	}
 
-	HANDLE hm = CreateFileMapping(hf, NULL, PAGE_READWRITE, 0, 0, L"name");
+	HANDLE hm = CreateFileMapping(hf, NULL, PAGE_READWRITE, 0, 0, GenerateViewName(FileName.c_str()));
 	if (!hm)
-		return NULL;
+		return E_FAIL;
 
 	std::cout << "Open FileMapping: " << hm << std::endl;
 
 	LPVOID lp = MapViewOfFile(hm, FILE_MAP_ALL_ACCESS | FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+
 	Addr = lp;
 	if (!lp)
 	{
-		return NULL;
+		return E_FAIL;
 	}
 	std::cout << "Open MapViewOfFile: " << lp << std::endl;
 
@@ -139,51 +133,62 @@ HTHANDLE* HT::Open(const std::wstring FileName)
 	ht->Mutex = CreateMutex(NULL, FALSE, L"mutex");
 
 	DWORD SnapShotThread = NULL;
-	if (!(ht->SnapshotThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SnapShotCycle, ht, 0, &SnapShotThread))) return NULL;
-	return ht;
+	if (!(ht->SnapshotThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SnapShotCycle, ht, 0, &SnapShotThread))) 
+		return E_FAIL;
+	return S_OK;
 }
 
-HTHANDLE* HT::OpenExist(const std::wstring FileName)
+STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 {
 	HANDLE hm;
 	HANDLE mutex = CreateMutex(NULL, FALSE, L"mutex");
-	WaitForSingleObject(mutex, INFINITE);
-	std::cout << _Post_equals_last_error_::GetLastError();
-
-	hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, L"name");
-	std::cout << _Post_equals_last_error_::GetLastError();
-	if (!hm)
+	if (mutex == INVALID_HANDLE_VALUE)
+	{
+		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
 		return NULL;
+	}
+
+	WaitForSingleObject(mutex, INFINITE);
+
+	hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, GenerateViewName(FileName.c_str()));
+	if (!hm)
+	{
+		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
+		return NULL;
+	}
 
 	LPVOID lp = MapViewOfFile(hm, FILE_MAP_ALL_ACCESS | FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
 	Addr = lp;
-	std::cout << _Post_equals_last_error_::GetLastError();
 	if (!lp)
+	{
+		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
 		return NULL;
+	}
 
 	ReleaseMutex(mutex);
 	HTHANDLE* ht = (HTHANDLE*)lp;
 	ht->FileMapping = hm;
 	ht->Addr = lp;
 	ht->Mutex = mutex;
+
 	return ht;
 }
 
-BOOL HT::Snap(HTHANDLE* hthandle) {
+STDMETHODIMP HT::Snap(HTHANDLE* hthandle) {
 	std::cout << "-----SNAPSHOT WAIT-----" << std::endl;
 	WaitForSingleObject(hthandle->Mutex, INFINITE);
 	if (!FlushViewOfFile(hthandle->Addr, NULL)) {
 		SetErrorMessage(hthandle, "Snapshot error", 15);
 		ReleaseMutex(hthandle->Mutex);
-		return FALSE;
+		return E_INVALIDARG;
 	}
 	std::cout << "-----SNAPSHOT-----" << std::endl;
 	hthandle->lastsnaptime = time(NULL);
 	ReleaseMutex(hthandle->Mutex);
-	return TRUE;
+	return S_OK;
 }
 
-BOOL HT::Close(const HTHANDLE* hthandle)
+STDMETHODIMP HT::Close(const HTHANDLE* hthandle)
 {
 	HANDLE mapping, file, mutex;
 
@@ -193,24 +198,30 @@ BOOL HT::Close(const HTHANDLE* hthandle)
 
 	TerminateThread(hthandle->SnapshotThread, 0);
 
-	if (!CloseHandle(mapping))return FALSE;
-	if (!CloseHandle(file))return FALSE;
-	if (!CloseHandle(mutex))return FALSE;
-	return TRUE;
+	if (!CloseHandle(mapping))
+		return E_INVALIDARG;
+	if (!CloseHandle(file))
+		return E_INVALIDARG;
+	if (!CloseHandle(mutex))
+		return E_INVALIDARG;
+	return S_OK;
 }
 
-BOOL HT::CloseExist(const HTHANDLE* hthandle) {
+STDMETHODIMP HT::CloseExist(const HTHANDLE* hthandle) {
 	if (!UnmapViewOfFile(hthandle->Addr))
 	{
-		return FALSE;
+		return E_INVALIDARG;
 	}
-	return TRUE;
+	return S_OK;
 }
 
-BOOL HT::Insert(HTHANDLE* hthandle, Element* element)
+STDMETHODIMP HT::Insert(HTHANDLE* hthandle, Element* element)
 {
 	if (!CheckParmLength(hthandle, element))
-		return FALSE;
+	{
+		std::cout << "You param length is incorect" << std::endl;
+		return E_INVALIDARG;
+	}
 	WaitForSingleObject(hthandle->Mutex, INFINITE);
 	bool inserted = false;
 
@@ -223,7 +234,7 @@ BOOL HT::Insert(HTHANDLE* hthandle, Element* element)
 				if (EqualElementKeys(elFromHT, element)) {
 					SetErrorMessage(hthandle, "Key exists\n", 12);
 					ReleaseMutex(hthandle->Mutex);
-					return FALSE;
+					return E_INVALIDARG;
 				}
 			}
 			SetElementToHT(hthandle, element, j);
@@ -233,13 +244,19 @@ BOOL HT::Insert(HTHANDLE* hthandle, Element* element)
 		}
 	}
 	ReleaseMutex(hthandle->Mutex);
-	return inserted;
+	if (inserted)
+		return S_OK;
+	else
+		return E_ABORT;
 }
 
-Element* HT::Get(HTHANDLE* hthandle, Element* element)
+STDMETHODIMP_(Element*) HT::Get(HTHANDLE* hthandle, Element* element)
 {
 	if (!CheckParmLength(hthandle, element))
+	{
+		std::cout << "You param length is incorect" << std::endl;
 		return NULL;
+	}
 	WaitForSingleObject(hthandle->Mutex, INFINITE);
 
 	int indexInHT = -1;
@@ -264,10 +281,10 @@ Element* HT::Get(HTHANDLE* hthandle, Element* element)
 	return GetElementFromHT(hthandle, indexInHT);
 }
 
-BOOL HT::Delete(HTHANDLE* hthandle, Element* element)
+STDMETHODIMP HT::Delete(HTHANDLE* hthandle, Element* element)
 {
 	if (!CheckParmLength(hthandle, element))
-		return FALSE;
+		return E_INVALIDARG;
 	WaitForSingleObject(hthandle->Mutex, INFINITE);
 	int indexInHT = -1;
 	bool deleted = false;
@@ -285,19 +302,19 @@ BOOL HT::Delete(HTHANDLE* hthandle, Element* element)
 	if (indexInHT < 0) {
 		SetErrorMessage(hthandle, "Not found key\n", 15);
 		ReleaseMutex(hthandle->Mutex);
-		return FALSE;
+		return E_INVALIDARG;
 	}
 
 	SetDeletedFlag(GetElementFromHT(hthandle, indexInHT));
 	hthandle->N--;
 	ReleaseMutex(hthandle->Mutex);
-	return TRUE;
+	return S_OK;
 }
 
-BOOL HT::Update(HTHANDLE* hthandle, Element* oldelement, void* newpayload, int newpayloadlength)
+STDMETHODIMP HT::Update(HTHANDLE* hthandle, Element* oldelement, void* newpayload, int newpayloadlength)
 {
 	if (!CheckParmLength(hthandle, oldelement) || !CheckParmLength(hthandle, newpayloadlength))
-		return FALSE;
+		return E_INVALIDARG;
 	WaitForSingleObject(hthandle->Mutex, INFINITE);
 	int indexInHT = -1;
 	bool updated = false;
@@ -315,19 +332,19 @@ BOOL HT::Update(HTHANDLE* hthandle, Element* oldelement, void* newpayload, int n
 	if (indexInHT < 0) {
 		SetErrorMessage(hthandle, "Not found key\n", 15);
 		ReleaseMutex(hthandle->Mutex);
-		return FALSE;
+		return E_INVALIDARG;
 	}
 
 	UpdateElement(hthandle, GetElementFromHT(hthandle, indexInHT), newpayload, newpayloadlength);
 	ReleaseMutex(hthandle->Mutex);
-	return TRUE;
+	return S_OK;
 }
 
-char* HT::GetLastErrorProg(HTHANDLE* ht) {
+STDMETHODIMP_(char*) HT::GetLastErrorProg(HTHANDLE* ht) {
 	return ht->LastErrorMessage;
 }
 
-void HT::print(const Element* element) {
+STDMETHODIMP HT::print(const Element* element) {
 	char* key = (char*)element->key;
 	std::cout << std::right << std::setfill('=') << std::setw(30) << '|' << std::endl;
 	std::cout << std::left << std::setfill(' ') << std::setw(10) << "KEY";
@@ -341,14 +358,15 @@ void HT::print(const Element* element) {
 	}
 	std::cout << std::endl;
 	std::cout << std::right << std::setfill('=') << std::setw(30) << '|' << std::endl;
+	return S_OK;
 }
 
-Element* HT::CreateNewFullElement(const void* key, int keylength, const void* payload, int payloadlength)
+STDMETHODIMP_(Element*) HT::CreateNewFullElement(const void* key, int keylength, const void* payload, int payloadlength)
 {
 	return new Element(key, keylength, payload, payloadlength);
 }
 
-Element* HT::CreateNewKeyElement(const void* key, int keylength)
+STDMETHODIMP_(Element*) HT::CreateNewKeyElement(const void* key, int keylength)
 {
 	return new Element(key, keylength);
 }
@@ -455,6 +473,7 @@ wchar_t* HT::GenerateMutexName(const wchar_t* pathToHT) {
 	std::wcout << s;
 	return (wchar_t*)s.c_str();
 }
+
 wchar_t* HT::GenerateViewName(const wchar_t* pathToHT) {
 	std::wstring s(pathToHT);
 	std::wstring mutexName;

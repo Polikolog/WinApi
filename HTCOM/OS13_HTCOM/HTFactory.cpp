@@ -30,7 +30,7 @@ STDMETHODIMP_(ULONG) HTFactory::Release()
 	return InterlockedDecrement(&m_refCount);
 }
 
-STDMETHODIMP HTFactory::CreateInstance(IUnknown* pUnkOuter, const IID& riid, void** ppvObject)
+STDMETHODIMP HTFactory::CreateInstance(IUnknown* pUnkOuter, const IID& riid, void **ppvObject)
 {
 	HT* pOs;
 	HRESULT hr{};

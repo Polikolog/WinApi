@@ -1,7 +1,4 @@
-﻿// OS_0053x.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
-#include <iostream>
+﻿#include <iostream>
 #pragma comment(lib, "../x64/Debug/OS12_LIB.lib")
 #include "OS12_LIB.h"
 

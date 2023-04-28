@@ -475,6 +475,7 @@ namespace HT {
 		s.erase(std::remove(s.begin(), s.end(), '\\'), s.end());
 		return (wchar_t*)s.c_str();
 	}
+
 	wchar_t* GenerateViewName(const wchar_t* pathToHT) {
 		std::wstring s(pathToHT);
 		std::wstring mutexName;

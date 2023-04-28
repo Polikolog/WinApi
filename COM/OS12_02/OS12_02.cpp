@@ -3,7 +3,7 @@
 #include <objbase.h>
 
 #define IERR(s)    std::cout<<"error "<<s<<std::endl
-#define IRES(s,r)  std::cout<<s<<r<<std::endl
+#define IRES(s,r)  std::cout<< s << r <<std::endl
 
 IAdder* pIAdder = nullptr;
 IMultiplier* pMultiplier = nullptr;
