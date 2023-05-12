@@ -76,10 +76,10 @@ int main(int argc, char* argv[])
 				HT_LIB::HT::print(ht, el);
 
 			std::tuple<Element*, bool, std::wstring, std::wstring> pr{ el,success, filePath, std::wstring(L"Insert")};
-			HANDLE hThread = CreateThread(NULL, 0, HT_LIB::HT::RecordingWork, &pr, 0, NULL);
+			//HANDLE hThread = CreateThread(NULL, 0, HT_LIB::HT::RecordingWork, &pr, 0, NULL);
 
-			WaitForSingleObject(hThread, INFINITE);
-			CloseHandle(hThread);
+			//WaitForSingleObject(hThread, INFINITE);
+			//CloseHandle(hThread);
 
 			Sleep(1000);
 		}

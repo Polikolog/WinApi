@@ -36,6 +36,6 @@ namespace HT_LIB
 		DWORD WINAPI RecordingWork(LPVOID point);
 	}
 
-	HANDLE Mutex;
+	static HANDLE Mutex;
 	IHT* p_Ht;
 }

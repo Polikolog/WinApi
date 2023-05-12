@@ -14,6 +14,22 @@ LPCWSTR  ProgID = L"HT.1.0";
 
 HANDLE Addr;
 
+std::wstring getFileNameFromPath(const std::wstring& path)
+{
+	// Находим последний символ '/' или '\\', чтобы разделить путь и имя файла
+	size_t pos = path.find_last_of(L"/\\");
+
+	// Если такой символ не найден, возвращаем исходную строку
+	if (pos == std::wstring::npos)
+	{
+		return path;
+	}
+
+	// Извлекаем имя файла
+	return path.substr(pos + 1);
+}
+
+
 DWORD WINAPI SnapShotCycle(HTHANDLE* ht);
 
 HT::HT()
@@ -31,7 +47,7 @@ STDMETHODIMP HT::QueryInterface(const IID& riid, void** ppvObject)
 {
 	if(riid == IID_IUnknown || riid == IID_IHT)
 	{
-		*ppvObject = static_cast<HT*>(this);
+		*ppvObject = static_cast<IHT*>(this);
 		AddRef();
 		return S_OK;
 	}
@@ -103,6 +119,8 @@ STDMETHODIMP_(HTHANDLE*) HT::Create(int Capacity, int SecSnapshotInterval, int M
 
 STDMETHODIMP HT::Open(const std::wstring FileName)
 {
+	auto file = getFileNameFromPath(FileName);
+
 	HANDLE hf = CreateFile(FileName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hf == INVALID_HANDLE_VALUE)
@@ -111,7 +129,7 @@ STDMETHODIMP HT::Open(const std::wstring FileName)
 		return E_FAIL;
 	}
 
-	HANDLE hm = CreateFileMapping(hf, NULL, PAGE_READWRITE, 0, 0, GenerateViewName(FileName.c_str()));
+	HANDLE hm = CreateFileMapping(hf, NULL, PAGE_READWRITE, 0, 0, file.c_str());
 	if (!hm)
 		return E_FAIL;
 
@@ -140,6 +158,10 @@ STDMETHODIMP HT::Open(const std::wstring FileName)
 
 STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 {
+	auto file = getFileNameFromPath(FileName);
+
+	std::wcout << std::endl << FileName << std::endl << GenerateViewName(FileName.c_str()) << std::endl;
+
 	HANDLE hm;
 	HANDLE mutex = CreateMutex(NULL, FALSE, L"mutex");
 	if (mutex == INVALID_HANDLE_VALUE)
@@ -150,7 +172,7 @@ STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 
 	WaitForSingleObject(mutex, INFINITE);
 
-	hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, GenerateViewName(FileName.c_str()));
+	hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, file.c_str());
 	if (!hm)
 	{
 		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
@@ -478,7 +500,7 @@ wchar_t* HT::GenerateViewName(const wchar_t* pathToHT) {
 	std::wstring s(pathToHT);
 	std::wstring mutexName;
 	s.erase(std::remove(s.begin(), s.end(), '\\'), s.end());
-	std::wcout << s;
+	std::wcout << std::endl << s << std::endl;
 	return (wchar_t*)s.c_str();
 }
 

@@ -371,7 +371,7 @@ DWORD WINAPI HT_LIB::HT::RecordingWork(LPVOID point)
 		std::wstring date = ss.str();
 
 		// !!!!!!!!!!!!!!!!!!!!!! add ..\\ in next path !!!!!!!!!!!!!!!!!!!!!!
-		std::wstring filePath(L"..\\Records\\" + typeOperation + L"\\" + date);
+		std::wstring filePath(L"..\\..\\Records\\" + typeOperation + L"\\" + date);
 
 		auto file = CreateFile(filePath.c_str(), GENERIC_READ | GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (file == INVALID_HANDLE_VALUE)
