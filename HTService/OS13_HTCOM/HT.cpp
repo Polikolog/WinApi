@@ -5,6 +5,8 @@
 #include<iomanip>
 #include <iostream>
 #include <lm.h>
+#include <sddl.h>
+#include <fstream>
 #pragma comment(lib, "netapi32.lib")
 
 long g_lLocks{ 0 };
@@ -16,13 +18,80 @@ LPCWSTR  ProgID = L"HT.1.0";
 
 HANDLE Addr;
 
+#define TRACEPATHO "D:\\HTCOMOpen.trace"
+#define TRACEPATHC "D:\\HTCOMCreate.trace"
+void traceO(const char* msg, int r = std::ofstream::out)
+{
+	std::ofstream out;
+	out.open(TRACEPATHO, r);
+	out << msg << "\n";
+	out.close();
+}
+void traceC(const char* msg, int r = std::ofstream::out)
+{
+	std::ofstream out;
+	out.open(TRACEPATHC, r);
+	out << msg << "\n";
+	out.close();
+}
+
+wchar_t* GetMutexName(const wchar_t* fileName, wchar_t* mutexName)
+{
+	size_t length = 0;
+	mutexName[length++] = L'G';
+	mutexName[length++] = L'l';
+	mutexName[length++] = L'o';
+	mutexName[length++] = L'b';
+	mutexName[length++] = L'a';
+	mutexName[length++] = L'l';
+	mutexName[length++] = L'\\';
+	for (size_t i = 0; i < wcslen(fileName); i++)
+	{
+		if (fileName[i] != L'\\' && fileName[i] != L'.')
+		{
+			mutexName[length++] = fileName[i];
+		}
+	}
+
+	mutexName[length++] = L'M';
+	mutexName[length] = L'\0';
+	return mutexName;
+}
+
 std::wstring getFileNameFromPath(const std::wstring& path)
 {
 	size_t pos = path.find_last_of(L"/\\");
 	if (pos == std::wstring::npos) {
-		return path;
+		//return path;
+		std::wstring str{ L"Global\\" };
+		str.append(path);
+		return str;
 	}
-	return path.substr(pos + 1);
+	std::wstring str{ L"Global\\" };
+	str.append(path.substr(pos + 1));
+	return str;
+}
+
+wchar_t* GetFileMappingName(const wchar_t* fileName, wchar_t* fileMappingName)
+{
+	size_t length = 0;
+	fileMappingName[length++] = L'G';
+	fileMappingName[length++] = L'l';
+	fileMappingName[length++] = L'o';
+	fileMappingName[length++] = L'b';
+	fileMappingName[length++] = L'a';
+	fileMappingName[length++] = L'l';
+	fileMappingName[length++] = L'\\';
+	for (size_t i = 0; i < wcslen(fileName); i++)
+	{
+		if (fileName[i] != L'\\' && fileName[i] != L'.')
+		{
+			fileMappingName[length++] = fileName[i];
+		}
+	}
+	fileMappingName[length++] = L'F';
+	fileMappingName[length] = L'\0';
+	return fileMappingName;
 }
 
 DWORD WINAPI SnapShotCycle(HTHANDLE* ht);
@@ -119,69 +188,108 @@ STDMETHODIMP_(HTHANDLE*) HT::Create(int Capacity, int SecSnapshotInterval, int M
 
 }
 
-STDMETHODIMP HT::Open(const std::wstring FileName)
+STDMETHODIMP_(HTHANDLE*) HT::Open(const std::wstring FileName)
 {
+	SECURITY_ATTRIBUTES attributes;
+	ZeroMemory(&attributes, sizeof(attributes));
+	attributes.nLength = sizeof(attributes);
+	ConvertStringSecurityDescriptorToSecurityDescriptor(
+		L"D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GWGR;;;IU)",
+		SDDL_REVISION_1,
+		&attributes.lpSecurityDescriptor,
+		NULL
+	);
+
 	auto file = getFileNameFromPath(FileName);
 
 	HANDLE hf = CreateFile(FileName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hf == INVALID_HANDLE_VALUE)
 	{
-		std::cout << _Post_equals_last_error_::GetLastError();
-		return E_FAIL;
+		char temp[512];
+		sprintf_s(temp, "\nCreateFile failed, error code = %d\n", GetLastError());
+		traceC(temp);
+		return NULL;
+	}
+	traceC("Create File");
+
+	HANDLE hm = CreateFileMapping(hf, &attributes, PAGE_READWRITE, 0, 0, file.c_str());
+	if (!hm)
+	{
+		char temp[512];
+		sprintf_s(temp, "\nCreateFileMapping failed, error code = %d\n", GetLastError());
+		traceC(temp);
+		return NULL;
 	}
 
-	HANDLE hm = CreateFileMapping(hf, NULL, PAGE_READWRITE, 0, 0, file.c_str());
-	if (!hm)
-		return E_FAIL;
+	traceC("Open FileMapping");
 
-	std::cout << "Open FileMapping: " << hm << std::endl;
-
-	LPVOID lp = MapViewOfFile(hm, FILE_MAP_ALL_ACCESS | FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+	LPVOID lp = MapViewOfFile(hm, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
 	Addr = lp;
 	if (!lp)
 	{
-		return E_FAIL;
+		return NULL;
 	}
-	std::cout << "Open MapViewOfFile: " << lp << std::endl;
+
+	traceC("Open MapViewOfFile");
 
 	HTHANDLE* ht = (HTHANDLE*)lp;
 	ht->File = hf;
 	ht->FileMapping = hm;
 	ht->Addr = lp;
-	ht->Mutex = CreateMutex(NULL, FALSE, L"mutex");
 
-	if (!CheckCurrentUser(ht))
+	wchar_t MName[512];
+	GetMutexName(FileName.c_str(), MName);
+
+	ht->Mutex = CreateMutex(NULL, FALSE, MName);
+
+	/*if (!CheckCurrentUser(ht))
 	{
 		Close(ht);
-		return E_FAIL;
-	}
+		return NULL;
+	}*/
+
+	traceC("CheckUserExx");
 
 	DWORD SnapShotThread = NULL;
-	if (!(ht->SnapshotThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SnapShotCycle, ht, 0, &SnapShotThread))) 
-		return E_FAIL;
-	return S_OK;
+	if (!(ht->SnapshotThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SnapShotCycle, ht, 0, &SnapShotThread)))
+	{
+		traceC("Error create thread");
+		Close(ht);
+		return NULL;
+	}
+
+	return ht;
 }
 
-STDMETHODIMP HT::Open(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)
+STDMETHODIMP_(HTHANDLE*) HT::Open(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)
 {
+	SECURITY_ATTRIBUTES attributes;
+	ZeroMemory(&attributes, sizeof(attributes));
+	attributes.nLength = sizeof(attributes);
+	ConvertStringSecurityDescriptorToSecurityDescriptor(
+		L"D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GWGR;;;IU)",
+		SDDL_REVISION_1,
+		&attributes.lpSecurityDescriptor,
+		NULL
+	);
 	auto file = getFileNameFromPath(FileName);
 	HANDLE pToken;
 	if (!LogonUser(HTUser.c_str(), NULL, HTPassword.c_str(), LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, &pToken))
-		return E_FAIL;
+		return NULL;
 
 	HANDLE hf = CreateFile(FileName.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hf == INVALID_HANDLE_VALUE)
 	{
 		std::cout << _Post_equals_last_error_::GetLastError();
-		return E_FAIL;
+		return NULL;
 	}
 
-	HANDLE hm = CreateFileMapping(hf, NULL, PAGE_READWRITE, 0, 0, file.c_str());
+	HANDLE hm = CreateFileMapping(hf, &attributes, PAGE_READWRITE, 0, 0, file.c_str());
 	if (!hm)
-		return E_FAIL;
+		return NULL;
 
 	std::cout << "Open FileMapping: " << hm << std::endl;
 
@@ -190,7 +298,7 @@ STDMETHODIMP HT::Open(const std::wstring HTUser, const std::wstring HTPassword, 
 	Addr = lp;
 	if (!lp)
 	{
-		return E_FAIL;
+		return NULL;
 	}
 	std::cout << "Open MapViewOfFile: " << lp << std::endl;
 
@@ -203,22 +311,25 @@ STDMETHODIMP HT::Open(const std::wstring HTUser, const std::wstring HTPassword, 
 	if (!CheckCurrentUser(ht, HTUser.c_str()))
 	{
 		Close(ht);
-		return E_FAIL;
+		return NULL;
 	}
 
 	DWORD SnapShotThread = NULL;
 	if (!(ht->SnapshotThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SnapShotCycle, ht, 0, &SnapShotThread)))
-		return E_FAIL;
-	return S_OK;
+		return NULL;
+	return ht;
 }
-
 
 STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 {
 	auto file = getFileNameFromPath(FileName);
 
-	HANDLE hm;
-	HANDLE mutex = CreateMutex(NULL, FALSE, L"mutex");
+	wchar_t str[512];
+	GetFileMappingName(FileName.c_str(), str);
+
+	wchar_t MName[512];
+	GetMutexName(FileName.c_str(), MName);
+	HANDLE mutex = CreateMutex(NULL, FALSE, MName);
 	if (mutex == INVALID_HANDLE_VALUE)
 	{
 		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
@@ -227,12 +338,14 @@ STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 
 	WaitForSingleObject(mutex, INFINITE);
 
-	hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, file.c_str());
+	HANDLE hm = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, file.c_str());
 	if (!hm)
 	{
-		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
+
 		return NULL;
 	}
+
+	traceO("OpenExitsFileMapping");
 
 	LPVOID lp = MapViewOfFile(hm, FILE_MAP_ALL_ACCESS | FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
 	Addr = lp;
@@ -241,6 +354,8 @@ STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 		std::cout << _Post_equals_last_error_::GetLastError() << std::endl;
 		return NULL;
 	}
+
+	traceO("OpenExist MapViewOfFile");
 
 	ReleaseMutex(mutex);
 	HTHANDLE* ht = (HTHANDLE*)lp;
@@ -251,7 +366,7 @@ STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring FileName)
 	return ht;
 }
 
-HTHANDLE* HT::OpenExist(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)
+STDMETHODIMP_(HTHANDLE*) HT::OpenExist(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)
 {
 	auto file = getFileNameFromPath(FileName);
 
@@ -552,6 +667,7 @@ int HT::HashFunction(const Element* element, int size, int p)    //Хеш-фун
 	delete[] arrKeyBytes;
 	return (p + sumBytes) % size;
 }
+
 int HT::Next_hash(int hash, int size, int p)
 {
 	return (hash + 5 * p + 3 * p * p) % size;

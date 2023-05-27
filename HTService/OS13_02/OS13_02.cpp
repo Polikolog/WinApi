@@ -8,8 +8,19 @@
 #include <ctime>
 #include <chrono>
 #include <iomanip>
+#include <fstream>
 
 HANDLE mutexName;
+
+#define TRACEPATH "D:\\02.trace"
+
+void trace(const char* msg, int r = std::ofstream::out)
+{
+	std::ofstream out;
+	out.open(TRACEPATH, r);
+	out << msg << "\n";
+	out.close();
+}
 
 wchar_t* GetWC(const char* c)
 {
@@ -38,14 +49,14 @@ int main(int argc, char* argv[])
 
 	wchar_t* fileName;
 	const wchar_t* directoryPath = L"..\\..\\HT";
-	std::wstring filePath(L"..\\HT\\test.ht");
+	std::wstring filePath(L"..\\HT\\test2.ht");
 	std::wstring HTUsers = L"";
 	std::wstring HTPassword = L"";
 
 	HANDLE hStopEvent = CreateEvent(NULL,
 		TRUE, //FALSE - автоматический сброс; TRUE - ручной
 		FALSE,
-		L"Stop");
+		L"Global\\HTStop");
 
 	try {
 		if (argv[1]) {
@@ -59,6 +70,9 @@ int main(int argc, char* argv[])
 				HTPassword = GetWC(argv[3]);
 			}
 		}
+
+		filePath = GetWC(argv[1]);
+		trace(std::string(filePath.begin(), filePath.end()).c_str());
 
 		ht = HT_LIB::Init();
 

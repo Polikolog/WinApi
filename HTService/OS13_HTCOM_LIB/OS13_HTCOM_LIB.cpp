@@ -89,7 +89,7 @@ HTHANDLE* HT_LIB::HT::Create(OS13HANDEL h, int Capacity, int SecSnapshotInterval
 	}
 }
 
-BOOL HT_LIB::HT::Open(OS13HANDEL h, const std::wstring FileName)
+HTHANDLE* HT_LIB::HT::Open(OS13HANDEL h, const std::wstring FileName)
 {
 	HTHANDLE* ht{ nullptr };
 	try
@@ -98,24 +98,25 @@ BOOL HT_LIB::HT::Open(OS13HANDEL h, const std::wstring FileName)
 		if (!SUCCEEDED((hr = static_cast<IUnknown*>(h)->QueryInterface(IID_IHT, (void**)&p_Ht))))
 			throw hr;
 
-		if (!SUCCEEDED(p_Ht->Open(FileName)))
+		HTHANDLE* ht;
+		if (!(ht = p_Ht->Open(FileName)))
 			throw "Error open HT";
 		p_Ht->Release();
-		return TRUE;
+		return ht;
 	}
 	catch (char* err)
 	{
 		std::cout << std::endl << err << std::endl;
-		return FALSE;
+		return NULL;
 	}
 	catch (HRESULT rc)
 	{
 		OutputErrorHandle(rc);
-		return FALSE;
+		return NULL;
 	}
 }
 
-BOOL HT_LIB::HT::Open(OS13HANDEL h, const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)
+HTHANDLE* HT_LIB::HT::Open(OS13HANDEL h, const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)
 {
 	HTHANDLE* ht{ nullptr };
 	try
@@ -124,20 +125,21 @@ BOOL HT_LIB::HT::Open(OS13HANDEL h, const std::wstring HTUser, const std::wstrin
 		if (!SUCCEEDED((hr = static_cast<IUnknown*>(h)->QueryInterface(IID_IHT, (void**)&p_Ht))))
 			throw hr;
 
-		if (!SUCCEEDED(p_Ht->Open(HTUser, HTPassword, FileName)))
+		HTHANDLE* ht;
+		if (!(ht = p_Ht->Open(HTUser, HTPassword, FileName)))
 			throw "Error open HT";
 		p_Ht->Release();
-		return TRUE;
+		return ht;
 	}
 	catch (char* err)
 	{
 		std::cout << std::endl << err << std::endl;
-		return FALSE;
+		return NULL;
 	}
 	catch (HRESULT rc)
 	{
 		OutputErrorHandle(rc);
-		return FALSE;
+		return NULL;
 	}
 }
 

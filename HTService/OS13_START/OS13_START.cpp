@@ -2,6 +2,17 @@
 #include <iostream>
 #include "HT_LIB.h"
 #include <wchar.h>
+#include <fstream>
+
+#define TRACEPATH "D:\\Start.trace"
+
+void trace(const char* msg, int r = std::ofstream::out)
+{
+	std::ofstream out;
+	out.open(TRACEPATH, r);
+	out << msg << "\n";
+	out.close();
+}
 
 wchar_t* GetWC(const char* c)
 {
@@ -14,7 +25,7 @@ wchar_t* GetWC(const char* c)
 int main(int argc, char* argv[])
 {
 	OS13HANDEL ht = nullptr;
-
+	char temp[121];
 	wchar_t* fileName{ nullptr };
 	const std::wstring directoryPath = L"..\\..\\HT";
 	std::wstring filePath(L"..\\HT\\test.ht");
@@ -24,7 +35,7 @@ int main(int argc, char* argv[])
 	HANDLE hStopEvent = CreateEvent(NULL,
 		TRUE, //FALSE - автоматический сброс; TRUE - ручной
 		FALSE,
-		L"Stop");
+		L"Global\\HTStop");
 
 	try {
 
@@ -44,23 +55,36 @@ int main(int argc, char* argv[])
 		else
 			std::cout << "Using default file path" << std::endl;
 
+
+		filePath = GetWC(argv[1]);
+		trace(std::string(filePath.begin(), filePath.end()).c_str());
+
+		HTHANDLE* HT;
+
 		ht = HT_LIB::Init();
 		if (ht == NULL)
 			throw "Error init com";
+
 		if (HTUsers == nullptr || HTPassword == nullptr)
 		{
-			if (!HT_LIB::HT::Open(ht, filePath.c_str()))
+			if (!(HT = HT_LIB::HT::Open(ht, filePath.c_str())))
 				throw "Error open";
 		}
 		else
 		{
-			if (!HT_LIB::HT::Open(ht, HTUsers, HTPassword, filePath))
+			if (!(HT = HT_LIB::HT::Open(ht, HTUsers, HTPassword, filePath)))
 				throw "Error open";
 		}
-		std::cout << "HT-Storage Open " << std::endl;
+
 		while (WaitForSingleObject(hStopEvent, 0) == WAIT_TIMEOUT)
 		{
+			//Sleep(2000);
+			//trace("WOORK");
 		}
+
+		HT_LIB::HT::Close(ht, HT);
+
+		//trace("CLOSE");
 
 		HT_LIB::Dispose(ht);
 		return 0;

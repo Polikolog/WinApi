@@ -30,8 +30,8 @@ public:
 	STDMETHOD_(ULONG, Release());
 
 	STDMETHOD_(HTHANDLE*, Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const std::wstring HTUsersGroups, const std::wstring FileName));
-	STDMETHOD(Open(const std::wstring FileName));
-	STDMETHOD(Open(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName));
+	STDMETHOD_(HTHANDLE*, Open(const std::wstring FileName));
+	STDMETHOD_(HTHANDLE*, Open(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName));
 	STDMETHOD_(HTHANDLE*, OpenExist(const std::wstring FileName));
 	STDMETHOD_(HTHANDLE*, OpenExist(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName));
 	STDMETHOD(CloseExist(const HTHANDLE* hthandle));

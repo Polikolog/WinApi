@@ -19,8 +19,8 @@ namespace HT_LIB
 	namespace HT
 	{
 		HTHANDLE* Create(OS13HANDEL h,int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength,const wchar_t HTUsersGroup[512], const wchar_t FileName[512]);
-		BOOL Open(OS13HANDEL h, const std::wstring FileName);
-		BOOL Open(OS13HANDEL h, const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName);
+		HTHANDLE* Open(OS13HANDEL h, const std::wstring FileName);
+		HTHANDLE* Open(OS13HANDEL h, const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName);
 		HTHANDLE* OpenExist(OS13HANDEL h, std::wstring FileName);
 		HTHANDLE* OpenExist(OS13HANDEL h, std::wstring HTUser, std::wstring HTPassword, std::wstring FileName);
 		BOOL Insert(OS13HANDEL h, HTHANDLE*, Element*);

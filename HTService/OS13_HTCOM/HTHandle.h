@@ -12,7 +12,7 @@ struct HTHANDLE
 	int     MaxPayloadLength;       // максимальная длина данных
 	char    FileName[512];          // имя файла 
 	HANDLE  File;                   // File HANDLE != 0, если файл открыт
-	HANDLE  FileMapping;            // Mapping File HANDLE != 0, если mapping создан  
+	GLOBALHANDLE  FileMapping;            // Mapping File HANDLE != 0, если mapping создан  
 	LPVOID  Addr;                   // Addr != NULL, если mapview выполнен  
 	char    LastErrorMessage[512];  // сообщение об последней ошибке или 0x00  
 	time_t  lastsnaptime;           // дата последнего snap'a (time())  

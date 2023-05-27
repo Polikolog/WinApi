@@ -9,8 +9,8 @@ struct Element;
 interface IHT : public IUnknown
 {
 	STDMETHOD_(HTHANDLE*, Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const std::wstring HTUsersGroup, const std::wstring FileName)) PURE;
-	STDMETHOD(Open(const std::wstring FileName)) PURE;
-	STDMETHOD(Open(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)) PURE;
+	STDMETHOD_(HTHANDLE*, Open(const std::wstring FileName)) PURE;
+	STDMETHOD_(HTHANDLE*, Open(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)) PURE;
 	STDMETHOD_(HTHANDLE*, OpenExist(const std::wstring FileName)) PURE;
 	STDMETHOD_(HTHANDLE*, OpenExist(const std::wstring HTUser, const std::wstring HTPassword, const std::wstring FileName)) PURE;
 	STDMETHOD(Snap(HTHANDLE* hthandle)) PURE;
