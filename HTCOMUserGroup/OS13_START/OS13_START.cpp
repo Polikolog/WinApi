@@ -21,11 +21,6 @@ int main(int argc, char* argv[])
 	wchar_t* HTUsers{nullptr};
 	wchar_t* HTPassword{nullptr};
 
-	HANDLE hStopEvent = CreateEvent(NULL,
-		TRUE, //FALSE - автоматический сброс; TRUE - ручной
-		FALSE,
-		L"Stop");
-
 	try {
 
 		if (argv[1]) 
@@ -57,7 +52,16 @@ int main(int argc, char* argv[])
 			if (!HT_LIB::HT::Open(ht, HTUsers, HTPassword, filePath))
 				throw "Error open";
 		}
+
 		std::cout << "HT-Storage Open " << std::endl;
+
+		std::wstring eventName{ fileName };
+		eventName += L"E";
+		HANDLE hStopEvent = CreateEvent(NULL,
+			TRUE, //FALSE - автоматический сброс; TRUE - ручной
+			FALSE,
+			eventName.c_str());
+
 		while (WaitForSingleObject(hStopEvent, 0) == WAIT_TIMEOUT)
 		{
 		}

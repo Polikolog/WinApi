@@ -19,11 +19,6 @@ int main(int argc, char* argv[])
 	const std::wstring directoryPath = L"..\\..\\HT";
 	std::wstring filePath(L"..\\HT\\test.ht");
 
-	HANDLE hStopEvent = CreateEvent(NULL,
-		TRUE, //FALSE - автоматический сброс; TRUE - ручной
-		FALSE,
-		L"Stop");
-
 	try {
 
 		if (argv[1]) 
@@ -35,6 +30,14 @@ int main(int argc, char* argv[])
 		}
 		else
 			std::cout << "Using default file path" << std::endl;
+
+		std::wstring eventName{ fileName };
+		eventName += L"E";
+		HANDLE hStopEvent = CreateEvent(NULL,
+			TRUE, //FALSE - автоматический сброс; TRUE - ручной
+			FALSE,
+			eventName.c_str());
+
 
 		ht = HT_LIB::Init();
 		if (ht == NULL)

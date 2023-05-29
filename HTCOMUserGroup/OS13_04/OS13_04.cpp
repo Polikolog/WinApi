@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 
 	OS13HANDEL ht = nullptr;
 
-	wchar_t* fileName;
+	wchar_t* fileName{nullptr};
 	const wchar_t* directoryPath = L"..\\..\\HT";
 	std::wstring filePath(L"..\\HT\\test.ht");
 	std::wstring HTUsers = L"";
@@ -65,6 +65,14 @@ int main(int argc, char* argv[])
 			if (HT == NULL)
 				throw "Invalid handle";
 		}
+
+		std::wstring eventName{ fileName };
+		eventName += L"E";
+		HANDLE hStopEvent = CreateEvent(NULL,
+			TRUE, //FALSE - автоматический сброс; TRUE - ручной
+			FALSE,
+			eventName.c_str());
+
 		while (WaitForSingleObject(hStopEvent, 0) == WAIT_TIMEOUT)
 		{
 			int numberKey = rand() % 50 + 1;

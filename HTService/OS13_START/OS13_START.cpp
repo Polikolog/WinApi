@@ -78,8 +78,6 @@ int main(int argc, char* argv[])
 
 		while (WaitForSingleObject(hStopEvent, 0) == WAIT_TIMEOUT)
 		{
-			//Sleep(2000);
-			//trace("WOORK");
 		}
 
 		HT_LIB::HT::Close(ht, HT);

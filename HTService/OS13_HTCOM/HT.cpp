@@ -426,14 +426,21 @@ STDMETHODIMP HT::Close(const HTHANDLE* hthandle)
 	memcpy(&file, &hthandle->File, sizeof(HANDLE));
 	memcpy(&mutex, &hthandle->Mutex, sizeof(HANDLE));
 
+	WaitForSingleObject(hthandle->Mutex, INFINITE);
 	TerminateThread(hthandle->SnapshotThread, 0);
 
 	if (!CloseHandle(mapping))
 		return E_INVALIDARG;
-	if (!CloseHandle(file))
+	if (!CloseHandle(hthandle->File))
 		return E_INVALIDARG;
+	ReleaseMutex(mutex);
 	if (!CloseHandle(mutex))
 		return E_INVALIDARG;
+	if (!CloseHandle(hthandle->SnapshotThread))
+		return E_INVALIDARG;
+
+	if(UnmapViewOfFile(hthandle))
+		return TRUE;
 	return S_OK;
 }
 

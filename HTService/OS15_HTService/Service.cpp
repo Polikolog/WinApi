@@ -54,55 +54,6 @@ bool AddPrivileges()
     return result;
 }
 
-/*VOID ServiceWorkerThread()
-{
-    OS13HANDEL ht = nullptr;
-    HTHANDLE* HT{ nullptr };
-    wchar_t* fileName{ nullptr };
-    const std::wstring directoryPath = L"..\\..\\HT";
-    std::wstring filePath(L"T:\\C3S2\\OS\\HTService\\HT\\test.ht");
-
-    HANDLE hStopEvent = CreateEvent(NULL,
-        TRUE, //FALSE - автоматический сброс; TRUE - ручной
-        FALSE,
-        L"Stop");
-
-    try {
-        ht = HT_LIB::Init();
-        if (ht == NULL)
-            throw "Error init com";
-
-        HT = HT_LIB::HT::Open(ht, filePath.c_str());
-    	if (HT == NULL)
-    		throw "Error open";
-
-        while (true)
-        {
-            if (bServicePause)
-            {
-                HT_LIB::HT::Close(ht, HT);
-            }
-            else if (HT == NULL)
-            {
-                HT = HT_LIB::HT::Open(ht, filePath.c_str());
-            }
-
-            // Выполняйте вашу основную задачу здесь
-
-            // Проверка события остановки службы
-            if (WaitForSingleObject(hStopEvent, 0) == WAIT_OBJECT_0)
-                break; // Выход из цикла, если получено событие остановки
-        }
-
-        HT_LIB::Dispose(ht);
-    }
-    catch (const char* err)
-    {
-        return;
-    }
-
-}*/
-
 VOID WINAPI  ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv)
 {
     char temp[121];
@@ -159,6 +110,8 @@ VOID WINAPI  ServiceMain(DWORD dwArgc, LPTSTR* lpszArgv)
 	    
     }
 
+    TerminateProcess(pi->hProcess, 0);
+
     // Ожидание завершения работы процесса
     WaitForSingleObject(pi->hProcess, INFINITE);
 
@@ -179,6 +132,11 @@ VOID WINAPI ServiceHandler(DWORD fdwControl)
         FALSE,
         L"Global\\HTStop");
 
+    HANDLE hStopEventExist = CreateEvent(NULL,
+        TRUE,
+        FALSE,
+        L"Global\\HTStopExist");
+
     switch (fdwControl)
     {
     case SERVICE_CONTROL_STOP:
@@ -187,6 +145,7 @@ VOID WINAPI ServiceHandler(DWORD fdwControl)
         ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         ServiceStatus.dwCheckPoint = 0;
     	ServiceStatus.dwWaitHint = 0;
+        SetEvent(hStopEventExist);
         SetEvent(hStopEvent);
     	break;
 

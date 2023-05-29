@@ -10,7 +10,7 @@ int main()
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    std::wstring szExePath = L".\\OS15_START.exe test.ht";
+    std::wstring szExePath = L".\\OS15_START.exe T:\\C3S2\\OS\\HTService\\HT\\test.ht";
 
     // Запуск внешней программы
     if (!CreateProcess(NULL, const_cast<LPWSTR>(szExePath.c_str()), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))

@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 	HANDLE hStopEvent = CreateEvent(NULL,
 		TRUE, //FALSE - автоматический сброс; TRUE - ручной
 		FALSE,
-		L"Global\\HTStop");
+		L"Global\\HTStopExist");
 
 	try {
 		if (argv[1]) {
