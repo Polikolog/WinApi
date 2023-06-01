@@ -15,7 +15,6 @@ char* errortxt(const char* msg, int code)
 int main(int argc, char* argv[])
 {
 	SC_HANDLE schSCManager = NULL, schService = NULL;
-	std::wstring UserName{ L"mi" }, UserPassword{ L"dfyz18122002" };
 	SERVICE_STATUS status;
 	try
 	{
