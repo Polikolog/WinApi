@@ -1,2 +1,2 @@
 # WinApi
-C++ WindApi
+C++ WinApi
